@@ -1,0 +1,39 @@
+<button class="burger-btn d-lg-none" [class.open]="isOpen" (click)="toggleSidebar()">
+  <span></span>
+  <span></span>
+  <span></span>
+</button>
+<div class="sidebar-overlay" *ngIf="isOpen" (click)="closeSidebar()"></div>
+<aside class="sidebar" [class.open]="isOpen">
+  <div class="sidebar-header">
+    <img src="/logo.png" alt="Logo Simplon" class="logo-img" />
+  </div>
+  <nav class="sidebar-nav">
+    <ul class="nav flex-column w-100">
+      <li class="nav-item mb-3">
+        <a class="btn btn-outline-light w-100 text-white" routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeSidebar()">Dashboard</a>
+      </li>
+      <li class="nav-item mb-3">
+        <a class="btn btn-outline-light w-100 text-white" routerLink="/guilds" routerLinkActive="active" (click)="closeSidebar()">Serveurs</a>
+      </li>
+      <li class="nav-item">
+        <a class="btn btn-outline-light w-100 text-white" routerLink="/utilisateurs" routerLinkActive="active" (click)="closeSidebar()">Utilisateurs</a>
+      </li>
+      <li class="nav-item mb-3">
+        <a class="btn btn-outline-light w-100 text-white" routerLink="/campus" routerLinkActive="active" (click)="closeSidebar()">Campus</a>
+      </li>
+      <li class="nav-item mb-3">
+        <a class="btn btn-outline-light w-100 text-white" routerLink="/promos" routerLinkActive="active" (click)="closeSidebar()">Promos</a>
+      </li>
+      <li class="nav-item mb-3">
+        <a class="btn btn-outline-light w-100 text-white" routerLink="/membres" routerLinkActive="active" (click)="closeSidebar()">Membres</a>
+      </li>
+      <li class="nav-item">
+        <a class="btn btn-outline-light w-100 text-white" routerLink="/canaux" routerLinkActive="active" (click)="closeSidebar()">Canaux</a>
+      </li>
+      <li class="nav-item">
+        <a class="btn btn-outline-light w-100 text-white" routerLink="/identifications" routerLinkActive="active" (click)="closeSidebar()">Identifications</a>
+      </li>
+    </ul>
+  </nav>
+</aside>

@@ -1,0 +1,108 @@
+<div class="page-container">
+  <div class="d-flex align-items-center mb-3">
+    <h1 class="me-2">Campus</h1>
+    <button class="btn btn-outline-secondary btn-sm" (click)="refreshCampuses()" title="Rafraîchir la liste des campus">
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
+  </div>
+  <div class="campus-card">
+    <div class="campus-card-header d-flex justify-content-between align-items-center mb-3 flex-wrap">
+      <div class="input-group search-group w-auto flex-grow-1 me-3 mb-2 mb-md-0">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control border-start-0" placeholder="Rechercher un campus" (input)="onSearch($event)" />
+      </div>
+      <button class="btn btn-danger" (click)="openModal()">Ajouter</button>
+    </div>
+    <div *ngIf="loading" class="text-center my-4">
+      <span class="spinner-border text-danger" role="status"></span>
+    </div>
+    <div class="table-responsive" *ngIf="!loading">
+      <table class="table table-borderless mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nom</th>
+            <th>Serveur Discord</th>
+            <th>Date de création</th>
+            <th>Promotions associées</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let campus of filteredCampuses">
+            <td>{{ campus.name }}</td>
+            <td>{{ campus.uuidGuild }}</td>
+            <td>{{ campus.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td><!-- Promotions associées à afficher ici si besoin --></td>
+            <td>
+              <button class="btn btn-sm btn-outline-secondary me-1" (click)="openEditModal(campus)" title="Renommer"><i class="bi bi-pencil"></i></button>
+              <button class="btn btn-sm btn-outline-danger" (click)="deleteCampus(campus)" title="Supprimer">🗑️</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal d'ajout de campus -->
+  <div class="modal fade show" tabindex="-1" [ngStyle]="{ display: showModal ? 'block' : 'none', background: 'rgba(0,0,0,0.3)' }" *ngIf="showModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Ajouter un campus</h5>
+          <button type="button" class="btn-close" (click)="closeModal()"></button>
+        </div>
+        <form [formGroup]="campusForm" (ngSubmit)="submitCampus()">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Nom du campus</label>
+              <input type="text" class="form-control" formControlName="name" [class.is-invalid]="campusForm.get('name')?.invalid && campusForm.get('name')?.touched">
+              <div class="invalid-feedback" *ngIf="campusForm.get('name')?.invalid && campusForm.get('name')?.touched">Nom obligatoire</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Serveur Discord</label>
+              <select class="form-select" formControlName="uuidGuild" [class.is-invalid]="campusForm.get('uuidGuild')?.invalid && campusForm.get('uuidGuild')?.touched">
+                <option value="" disabled selected>Choisir un serveur</option>
+                <option *ngFor="let guild of guilds" [value]="guild.uuid">{{ guild.name }}</option>
+              </select>
+              <div class="invalid-feedback" *ngIf="campusForm.get('uuidGuild')?.invalid && campusForm.get('uuidGuild')?.touched">Serveur obligatoire</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+            <button type="submit" class="btn btn-danger" [disabled]="campusForm.invalid || submitting">
+              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+              Ajouter
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal d'édition du campus -->
+  <div class="modal fade show" tabindex="-1" [ngStyle]="{ display: showEditModal ? 'block' : 'none', background: 'rgba(0,0,0,0.3)' }" *ngIf="showEditModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Renommer le campus</h5>
+          <button type="button" class="btn-close" (click)="closeEditModal()"></button>
+        </div>
+        <form [formGroup]="editCampusForm" (ngSubmit)="submitEditCampus()">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Nouveau nom</label>
+              <input type="text" class="form-control" formControlName="name" [class.is-invalid]="editCampusForm.get('name')?.invalid && editCampusForm.get('name')?.touched">
+              <div class="invalid-feedback" *ngIf="editCampusForm.get('name')?.invalid && editCampusForm.get('name')?.touched">Nom obligatoire</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeEditModal()">Annuler</button>
+            <button type="submit" class="btn btn-danger" [disabled]="editCampusForm.invalid">
+              Renommer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

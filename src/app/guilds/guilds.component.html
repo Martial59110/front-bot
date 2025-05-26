@@ -1,0 +1,76 @@
+<div class="page-container">
+  <div class="d-flex align-items-center mb-3">
+    <h1 class="me-2">Serveurs</h1>
+    <button class="btn btn-outline-secondary btn-sm" (click)="refreshMembers()" title="Mettre à jour le nombre de membres">
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
+  </div>
+  <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
+    <i class="bi bi-info-circle me-2"></i>
+    <div>
+      Pour ajouter un nouveau serveur, assurez-vous d'avoir d'abord installé le bot sur celui-ci. 
+      <a href="https://discord.com/oauth2/authorize?client_id=1376536561193189406&permissions=8&integration_type=0&scope=bot+applications.commands" target="_blank" class="alert-link">Cliquez ici pour installer le bot</a>
+    </div>
+  </div>
+  <div class="guilds-card">
+    <div class="guilds-card-header d-flex justify-content-between align-items-center mb-3 flex-wrap">
+      <div class="input-group search-group w-auto flex-grow-1 me-3 mb-2 mb-md-0">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control border-start-0" placeholder="Rechercher un serveur" (input)="onSearch($event)" />
+      </div>
+      <button class="btn btn-danger" (click)="openModal()">Ajouter</button>
+    </div>
+    <div class="table-responsive">
+      <table class="table table-borderless mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Nom</th>
+            <th>ID Discord</th>
+            <th>Date de création</th>
+            <th>Nombre de membres</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let guild of filteredGuilds">
+            <td>{{ guild.name }}</td>
+            <td>{{ guild.uuid }}</td>
+            <td>{{ guild.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>{{ guild.memberCount }}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-danger" (click)="deleteGuild(guild)">🗑️</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Modal d'ajout de serveur -->
+  <div class="modal fade show" tabindex="-1" [ngStyle]="{ display: showModal ? 'block' : 'none', background: 'rgba(0,0,0,0.3)' }" *ngIf="showModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Ajouter un serveur</h5>
+          <button type="button" class="btn-close" (click)="closeModal()"></button>
+        </div>
+        <form [formGroup]="guildForm" (ngSubmit)="submitGuild()">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">ID Discord</label>
+              <input type="text" class="form-control" formControlName="uuid" [class.is-invalid]="guildForm.get('uuid')?.invalid && guildForm.get('uuid')?.touched">
+              <div class="invalid-feedback" *ngIf="guildForm.get('uuid')?.invalid && guildForm.get('uuid')?.touched">ID Discord obligatoire</div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+            <button type="submit" class="btn btn-danger" [disabled]="guildForm.invalid || submitting">
+              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+              Ajouter
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

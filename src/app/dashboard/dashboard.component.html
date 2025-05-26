@@ -1,0 +1,44 @@
+<div class="page-container">
+  <div class="dashboard-title">Dashboard</div>
+  <div class="dashboard-top-cards">
+    <app-card class="gauge-card">
+      <div class="card-title">Nombre de salons</div>
+      <app-gauge [value]="234" [max]="500"></app-gauge>
+      <div class="card-value"><span>234</span>/500</div>
+    </app-card>
+    <app-card class="gauge-card">
+      <div class="card-title">Nombre de role</div>
+      <app-gauge [value]="150" [max]="200"></app-gauge>
+      <div class="card-value"><span>150</span>/200</div>
+    </app-card>
+  </div>
+  <div class="dashboard-bottom-cards">
+    <app-card class="promo-card">
+      <div class="card-title">Promos</div>
+      <!-- Zone stats et graphique -->
+      <div class="promo-stats">
+        <div class="stat-label">En cours</div>
+        <div class="stat-value">24</div>
+        <div class="stat-label">Total</div>
+        <div class="stat-value">145</div>
+      </div>
+      <div class="promo-chart">
+        <!-- Graphique ici -->
+      </div>
+    </app-card>
+    <app-card class="apprenant-card">
+      <div class="card-title">Apprenants</div>
+      <!-- Zone stats et graphique -->
+      <div class="apprenant-stats">
+        <div class="stat-label">En cours</div>
+        <div class="stat-value">24</div>
+        <div class="stat-label">Total</div>
+        <div class="stat-value">145</div>
+      </div>
+      <div class="apprenant-chart">
+        <!-- Graphique ici -->
+      </div>
+    </app-card>
+  </div>
+</div>
+
