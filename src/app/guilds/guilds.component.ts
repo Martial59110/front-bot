@@ -21,7 +21,7 @@ export class GuildsComponent implements OnInit {
 
   constructor(private http: HttpClient, private fb: FormBuilder) {
     this.guildForm = this.fb.group({
-      uuid: ['', Validators.required]
+      uuid: ['', [Validators.required, Validators.minLength(17), Validators.maxLength(19)]]
     });
   }
 
@@ -70,23 +70,14 @@ export class GuildsComponent implements OnInit {
     // Appel à l'API pour créer la guilde
     this.http.post('/api/guilds', {
       uuid: this.guildForm.value.uuid,
-      name: "Nouveau serveur",
-      memberCount: "0",
-      configuration: {}
+      name: "Chargement...", // Sera mis à jour par le backend
+      memberCount: "0", // Sera mis à jour par le backend
+      configuration: {} // Sera mis à jour par le backend
     }).subscribe({
       next: () => {
-        // Une fois créé, on fait le setup
-        this.http.post(`/api/guilds/${this.guildForm.value.uuid}/setup`, {}).subscribe({
-          next: () => {
-            this.submitting = false;
-            this.closeModal();
-            this.loadGuilds();
-          },
-          error: (error) => {
-            console.error('Erreur lors du setup de la guilde:', error);
-            this.submitting = false;
-          }
-        });
+        this.submitting = false;
+        this.closeModal();
+        this.loadGuilds();
       },
       error: (error) => {
         console.error('Erreur lors de la création de la guilde:', error);
@@ -104,23 +95,6 @@ export class GuildsComponent implements OnInit {
   }
 
   refreshMembers() {
-    if (this.guilds.length === 0) {
-      this.loadGuilds();
-      return;
-    }
-
-    this.loading = true;
-    const updatePromises = this.guilds.map(guild => 
-      this.http.post(`/api/guilds/${guild.uuid}/setup`, {}).toPromise()
-    );
-
-    Promise.all(updatePromises)
-      .then(() => {
-        this.loadGuilds();
-      })
-      .catch(error => {
-        console.error('Erreur lors de la mise à jour des membres:', error);
-        this.loading = false;
-      });
+    this.loadGuilds();
   }
 }

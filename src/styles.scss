@@ -6,7 +6,10 @@ body {
   padding: 0;
   box-sizing: border-box;
 }
-
+.main-content {
+  margin-left: 10%; // Mets 240px ou plus pour un peu d'air
+  padding: 2%;
+}
 .page-container {
   background: #fff;
   border-radius: 18px;

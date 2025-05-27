@@ -1,0 +1,179 @@
+<div class="page-container">
+  <div class="d-flex align-items-center mb-3">
+    <h1 class="me-2">Formations</h1>
+    <button class="btn btn-outline-secondary btn-sm" (click)="refreshFormations()" title="Rafraîchir la liste des formations">
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
+  </div>
+  <div class="formation-card">
+    <div class="formation-card-header d-flex justify-content-between align-items-center mb-3 flex-wrap">
+      <div class="input-group search-group w-auto flex-grow-1 me-3 mb-2 mb-md-0">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control border-start-0" placeholder="Rechercher une formation" (input)="onSearch($event)" />
+      </div>
+      <button class="btn btn-danger" (click)="openModal()">Ajouter</button>
+    </div>
+    <div *ngIf="loading" class="text-center my-4">
+      <span class="spinner-border text-danger" role="status"></span>
+    </div>
+    <div class="formation-list">
+      <div *ngFor="let formation of filteredFormations" class="formation-card mb-4 p-3 shadow-sm rounded">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+          <div>
+            <h4 class="mb-1">{{ formation.name }}</h4>
+            <div class="text-muted small">Serveur Discord : <b>{{ getGuildName(formation.uuidGuild) }}</b></div>
+          </div>
+          <div>
+            <button class="btn btn-sm btn-outline-secondary me-1" (click)="openEditModal(formation)" title="Renommer"><i class="bi bi-pencil"></i></button>
+            <button class="btn btn-sm btn-outline-danger" (click)="deleteFormation(formation)" title="Supprimer">🗑️</button>
+          </div>
+        </div>
+        <div class="mb-2">
+          <span class="text-muted small">Créée le {{ formation.createdAt | date:'dd/MM/yyyy HH:mm' }}</span>
+        </div>
+        <div class="channels-list">
+          <div *ngIf="formation.channels?.length; else noChannels">
+            <div cdkDropList (cdkDropListDropped)="reorderChannels(formation, $event)">
+              <div *ngFor="let channel of getSortedChannels(formation); let i = index" cdkDrag class="mb-2 d-flex align-items-center">
+                <span class="badge bg-secondary me-2">
+                  <ng-container [ngSwitch]="channel.type">
+                    <i *ngSwitchCase="'text'" class="bi bi-chat-left-text"></i>
+                    <i *ngSwitchCase="'voice'" class="bi bi-mic"></i>
+                    <i *ngSwitchCase="'announcement'" class="bi bi-megaphone"></i>
+                    <i *ngSwitchCase="'forum'" class="bi bi-collection"></i>
+                    <span *ngSwitchDefault>{{ channel.type }}</span>
+                  </ng-container>
+                  {{ channel.name }}
+                </span>
+                <ng-container *ngIf="channel.type === 'forum' && getThreadsForForum(formation, channel.uuid).length">
+                  <div class="ms-2">
+                    <div *ngFor="let thread of getThreadsForForum(formation, channel.uuid); let i = index" class="d-inline-block me-1 mb-1 align-middle">
+                      <span class="badge bg-info text-dark">📝 {{ thread.name }} <span class="text-muted small">#{{ thread.threadPosition }}</span></span>
+                      <button class="btn btn-link btn-sm p-0 align-baseline" (click)="moveThreadUp(formation, channel.uuid, i)" [disabled]="i === 0" title="Monter"><i class="bi bi-arrow-up"></i></button>
+                      <button class="btn btn-link btn-sm p-0 align-baseline" (click)="moveThreadDown(formation, channel.uuid, i)" [disabled]="i === getThreadsForForum(formation, channel.uuid).length - 1" title="Descendre"><i class="bi bi-arrow-down"></i></button>
+                    </div>
+                  </div>
+                  <button *ngIf="formation._threadsOrderChanged && formation._threadsOrderChanged[channel.uuid]" class="btn btn-sm btn-success mt-1 ms-2" (click)="saveThreadsOrder(formation, channel.uuid)">Enregistrer l'ordre des posts</button>
+                </ng-container>
+                <span class="ms-2 text-muted small">#{{ channel.channelPosition }}</span>
+                <span cdkDragHandle class="ms-2" style="cursor: grab;"><i class="bi bi-list"></i></span>
+              </div>
+            </div>
+            <button *ngIf="formation._channelsOrderChanged" class="btn btn-sm btn-success mt-2" (click)="saveChannelsOrder(formation)">Enregistrer l'ordre</button>
+          </div>
+          <ng-template #noChannels>
+            <span class="text-muted">Aucun canal</span>
+          </ng-template>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal d'ajout de formation -->
+  <div class="modal fade show" tabindex="-1" [ngStyle]="{ display: showModal ? 'block' : 'none', background: 'rgba(0,0,0,0.3)' }" *ngIf="showModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Ajouter une formation</h5>
+          <button type="button" class="btn-close" (click)="closeModal()"></button>
+        </div>
+        <form [formGroup]="formationForm" (ngSubmit)="submitFormation()">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Nom de la formation</label>
+              <input type="text" class="form-control" formControlName="name" [class.is-invalid]="formationForm.get('name')?.invalid && formationForm.get('name')?.touched">
+              <div class="invalid-feedback" *ngIf="formationForm.get('name')?.invalid && formationForm.get('name')?.touched">Nom obligatoire</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Serveur Discord</label>
+              <select class="form-select" formControlName="uuidGuild" [class.is-invalid]="formationForm.get('uuidGuild')?.invalid && formationForm.get('uuidGuild')?.touched">
+                <option value="" disabled selected>Choisir un serveur</option>
+                <option *ngFor="let guild of guilds" [value]="guild.uuid">{{ guild.name }}</option>
+              </select>
+              <div class="invalid-feedback" *ngIf="formationForm.get('uuidGuild')?.invalid && formationForm.get('uuidGuild')?.touched">Serveur obligatoire</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Channels à associer</label>
+              <div class="channels-scroll-container">
+                <div *ngFor="let channel of channels" class="channel-item d-flex align-items-center mb-2 p-2 rounded" [class.selected]="formationForm.get('channelIds')?.value.includes(channel.uuid)">
+                  <input type="checkbox" class="form-check-input me-2" [checked]="formationForm.get('channelIds')?.value.includes(channel.uuid)" (change)="onChannelToggle(channel.uuid, $event)">
+                  <ng-container [ngSwitch]="channel.type">
+                    <i *ngSwitchCase="'text'" class="bi bi-chat-left-text me-1"></i>
+                    <i *ngSwitchCase="'voice'" class="bi bi-mic me-1"></i>
+                    <i *ngSwitchCase="'announcement'" class="bi bi-megaphone me-1"></i>
+                    <i *ngSwitchCase="'forum'" class="bi bi-collection me-1"></i>
+                    <span *ngSwitchDefault class="me-1">{{ channel.type }}</span>
+                  </ng-container>
+                  <span class="fw-bold">{{ channel.name }}</span>
+                  <span class="badge bg-light text-dark ms-2">{{ channel.type }}</span>
+                  <span class="text-muted small ms-2">{{ channel.categoryName }}</span>
+                </div>
+              </div>
+            </div>
+            <div *ngFor="let forum of selectedForumChannels" class="mb-3 border rounded p-2">
+              <label class="form-label">Posts à créer dans le forum <b>{{ forum.name }}</b></label>
+              <div class="input-group mb-2">
+                <input type="text" class="form-control" [(ngModel)]="newThreadName[forum.uuid]" [attr.name]="'thread-'+forum.uuid" [ngModelOptions]="{standalone: true}" placeholder="Nom du post">
+                <button type="button" class="btn btn-outline-secondary" (click)="addThread(forum.uuid)">Ajouter</button>
+              </div>
+              <div *ngIf="forumThreads[forum.uuid]?.length">
+                <ul class="list-group list-group-flush">
+                  <li *ngFor="let thread of forumThreads[forum.uuid]; let i = index" class="list-group-item d-flex justify-content-between align-items-center">
+                    {{ thread }}
+                    <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeThread(forum.uuid, i)"><i class="bi bi-x"></i></button>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+            <button type="submit" class="btn btn-danger" [disabled]="formationForm.invalid || submitting">
+              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+              Ajouter
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal d'édition de la formation -->
+  <div class="modal fade show" tabindex="-1" [ngStyle]="{ display: showEditModal ? 'block' : 'none', background: 'rgba(0,0,0,0.3)' }" *ngIf="showEditModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Renommer la formation</h5>
+          <button type="button" class="btn-close" (click)="closeEditModal()"></button>
+        </div>
+        <form [formGroup]="editFormationForm" (ngSubmit)="submitEditFormation()">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Nouveau nom</label>
+              <input type="text" class="form-control" formControlName="name" [class.is-invalid]="editFormationForm.get('name')?.invalid && editFormationForm.get('name')?.touched">
+              <div class="invalid-feedback" *ngIf="editFormationForm.get('name')?.invalid && editFormationForm.get('name')?.touched">Nom obligatoire</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Channels associés</label>
+              <ng-select
+                [items]="channels"
+                bindLabel="name"
+                bindValue="uuid"
+                [multiple]="true"
+                [searchable]="true"
+                formControlName="channelIds"
+                placeholder="Rechercher ou sélectionner des channels...">
+              </ng-select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeEditModal()">Annuler</button>
+            <button type="submit" class="btn btn-danger" [disabled]="editFormationForm.invalid">
+              Renommer
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div> 

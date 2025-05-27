@@ -30,7 +30,7 @@
         <tbody>
           <tr *ngFor="let campus of filteredCampuses">
             <td>{{ campus.name }}</td>
-            <td>{{ campus.uuidGuild }}</td>
+            <td>{{ getGuildName(campus.uuidGuild) }}</td>
             <td>{{ campus.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
             <td><!-- Promotions associées à afficher ici si besoin --></td>
             <td>

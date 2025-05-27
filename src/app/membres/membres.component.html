@@ -1,3 +1,117 @@
 <div class="page-container">
-  <p><b>Membres</b> works!</p>
+  <div class="d-flex align-items-center mb-3">
+    <h1 class="me-2">Membres</h1>
+    <button class="btn btn-outline-secondary btn-sm" (click)="refreshMembres()" title="Rafraîchir la liste des membres">
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
+  </div>
+  <div class="membres-card">
+    <div class="membres-card-header d-flex justify-content-between align-items-center mb-3 flex-wrap">
+      <div class="input-group search-group w-auto flex-grow-1 me-3 mb-2 mb-md-0">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control border-start-0" placeholder="Rechercher un membre" (input)="onSearch($event)" />
+      </div>
+    </div>
+    <div *ngIf="loading" class="text-center my-4">
+      <span class="spinner-border text-danger" role="status"></span>
+    </div>
+    <div class="table-responsive" *ngIf="!loading">
+      <table class="table table-borderless mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Pseudo</th>
+            <th>Rôles</th>
+            <th>Promotions</th>
+            <th>Date d'arrivée</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let membre of filteredMembres">
+            <td class="d-flex align-items-center">
+              <img [src]="getAvatarUrl(membre)" alt="avatar" class="avatar-member me-2" width="32" height="32" style="border-radius:50%;object-fit:cover;">
+              <span>{{ membre.guildUsername }}</span>
+              <button class="btn btn-link btn-sm p-0 ms-2" (click)="openEditPseudoModal(membre)" title="Modifier le pseudo"><i class="bi bi-pencil"></i></button>
+            </td>
+            <td>
+              <ng-container *ngIf="membre.roles?.length; else noRoles">
+                {{ getRolesString(membre) }}
+              </ng-container>
+              <ng-template #noRoles><span class="text-muted">Aucun</span></ng-template>
+            </td>
+            <td>
+              <ng-container *ngIf="membre.followedPromotions?.length; else noPromos">
+                {{ getPromosString(membre) }}
+              </ng-container>
+              <ng-template #noPromos><span class="text-muted">Aucune</span></ng-template>
+              <button class="btn btn-link btn-sm p-0 ms-2" (click)="openEditPromosModal(membre)" title="Modifier les promotions"><i class="bi bi-pencil"></i></button>
+            </td>
+            <td>{{ membre.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modale édition pseudo -->
+<div class="modal fade show" tabindex="-1" [ngStyle]="{ display: showEditPseudoModal ? 'block' : 'none', background: 'rgba(0,0,0,0.3)' }" *ngIf="showEditPseudoModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Modifier le pseudo</h5>
+        <button type="button" class="btn-close" (click)="closeEditPseudoModal()"></button>
+      </div>
+      <form [formGroup]="editPseudoForm" (ngSubmit)="submitEditPseudo()">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Nouveau pseudo</label>
+            <input type="text" class="form-control" formControlName="guildUsername" [class.is-invalid]="editPseudoForm.get('guildUsername')?.invalid && editPseudoForm.get('guildUsername')?.touched">
+            <div class="invalid-feedback" *ngIf="editPseudoForm.get('guildUsername')?.invalid && editPseudoForm.get('guildUsername')?.touched">Pseudo obligatoire</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeEditPseudoModal()">Annuler</button>
+          <button type="submit" class="btn btn-danger" [disabled]="editPseudoForm.invalid || submitting">
+            <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+            Valider
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modale édition promotions -->
+<div class="modal fade show" tabindex="-1" [ngStyle]="{ display: showEditPromosModal ? 'block' : 'none', background: 'rgba(0,0,0,0.3)' }" *ngIf="showEditPromosModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Modifier les promotions</h5>
+        <button type="button" class="btn-close" (click)="closeEditPromosModal()"></button>
+      </div>
+      <form [formGroup]="editPromosForm" (ngSubmit)="submitEditPromos()">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Promotions à associer</label>
+            <ng-select
+              [items]="promotions"
+              bindLabel="name"
+              bindValue="uuid"
+              [multiple]="true"
+              [searchable]="true"
+              formControlName="followedPromotions"
+              placeholder="Rechercher ou sélectionner des promotions...">
+            </ng-select>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeEditPromosModal()">Annuler</button>
+          <button type="submit" class="btn btn-danger" [disabled]="editPromosForm.invalid || submitting">
+            <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+            Valider
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
 </div>

@@ -76,6 +76,11 @@ export class CampusComponent implements OnInit {
     });
   }
 
+  getGuildName(uuidGuild: string): string {
+    const guild = this.guilds.find(g => g.uuid === uuidGuild);
+    return guild ? guild.name : uuidGuild;
+  }
+
   refreshCampuses() {
     this.loadCampuses();
   }
@@ -88,7 +93,7 @@ export class CampusComponent implements OnInit {
     const search = this.searchTerm.toLowerCase();
     this.filteredCampuses = this.campusList.filter(campus => 
       campus.name.toLowerCase().includes(search) || 
-      (campus.uuidGuild && campus.uuidGuild.toLowerCase().includes(search))
+      (campus.uuidGuild && this.getGuildName(campus.uuidGuild).toLowerCase().includes(search))
     );
   }
 
