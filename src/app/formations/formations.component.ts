@@ -31,6 +31,9 @@ export class FormationsComponent implements OnInit {
   channels: any[] = [];
   forumThreads: { [forumId: string]: string[] } = {};
   newThreadName: { [forumId: string]: string } = {};
+  page = 1;
+  limit = 5;
+  totalFormations = 0;
 
   constructor(private http: HttpClient, private fb: FormBuilder) {
     this.formationForm = this.fb.group({
@@ -47,7 +50,7 @@ export class FormationsComponent implements OnInit {
 
   ngOnInit() {
     this.loadGuilds();
-    this.loadFormations();
+    this.loadFormations(1);
     this.loadChannels();
   }
 
@@ -68,23 +71,39 @@ export class FormationsComponent implements OnInit {
     });
   }
 
-  loadFormations() {
+  loadFormations(page: number = this.page, searchTerm: string = this.searchTerm) {
     this.loading = true;
-    this.http.get<any>('/api/formations').subscribe({
+    let url = `/api/formations?page=${page}&limit=${this.limit}`;
+    if (searchTerm && searchTerm.trim()) {
+      url += `&search=${encodeURIComponent(searchTerm.trim())}`;
+    }
+    this.http.get<any>(url).subscribe({
       next: (data) => {
-        if (Array.isArray(data)) {
-          this.formationList = data;
+        if (data && data.data && Array.isArray(data.data.data)) {
+          this.formationList = data.data.data;
+          this.totalFormations = data.data.total || data.data.data.length;
         } else if (data && Array.isArray(data.data)) {
           this.formationList = data.data;
-        } else if (data && data.data && Array.isArray(data.data.data)) {
-          this.formationList = data.data.data;
+          this.totalFormations = data.total || data.data.length;
+        } else if (Array.isArray(data)) {
+          this.formationList = data;
+          this.totalFormations = data.length;
         } else {
           this.formationList = [];
+          this.totalFormations = 0;
         }
-        this.filterFormations();
+        this.page = page;
+        // CLONAGE DES CHANNELS POUR CHAQUE FORMATION
+        this.formationList.forEach(formation => {
+          if (formation.channels) {
+            formation.channels = formation.channels.map((ch: any) => ({ ...ch }));
+          }
+        });
+        // Plus de filtrage côté front, la pagination et la recherche sont côté back
+        this.filteredFormations = this.formationList;
         this.loading = false;
       },
-      error: () => { this.formationList = []; this.filterFormations(); this.loading = false; }
+      error: () => { this.formationList = []; this.filteredFormations = []; this.loading = false; }
     });
   }
 
@@ -118,7 +137,7 @@ export class FormationsComponent implements OnInit {
   }
 
   refreshFormations() {
-    this.loadFormations();
+    this.loadFormations(1);
   }
 
   filterFormations() {
@@ -136,7 +155,7 @@ export class FormationsComponent implements OnInit {
   onSearch(event: Event) {
     const input = event.target as HTMLInputElement;
     this.searchTerm = input.value;
-    this.filterFormations();
+    this.loadFormations(1, this.searchTerm);
   }
 
   openModal() { this.showModal = true; }
@@ -166,13 +185,23 @@ export class FormationsComponent implements OnInit {
     const threads = Object.entries(this.forumThreads).flatMap(([forumId, names]) =>
       names.map(name => ({ name, forumId }))
     );
-    this.formationForm.get('threads')?.setValue(threads);
+    // Suppression des doublons par forumId + name
+    const unique = threads.filter((t, i, arr) =>
+      arr.findIndex(x => x.forumId === t.forumId && x.name === t.name) === i
+    );
+    this.formationForm.get('threads')?.setValue(unique);
   }
 
   submitFormation() {
     if (this.formationForm.invalid) return;
     this.submitting = true;
-    this.http.post('/api/formations', this.formationForm.value).subscribe({
+    // Filtrage ultime AVANT envoi
+    let threads = this.formationForm.value.threads || [];
+    threads = threads.filter((t: any, i: number, arr: any[]) =>
+      arr.findIndex(x => x.forumId === t.forumId && x.name === t.name) === i
+    );
+    const payload = { ...this.formationForm.value, threads };
+    this.http.post('/api/formations', payload).subscribe({
       next: () => { this.submitting = false; this.closeModal(); this.loadFormations(); },
       error: () => { this.submitting = false; }
     });
@@ -263,26 +292,6 @@ export class FormationsComponent implements OnInit {
     return sorted;
   }
 
-  moveThreadUp(formation: any, forumId: string, idx: number) {
-    const threads = this.getThreadsForForum(formation, forumId);
-    if (idx > 0) {
-      [threads[idx - 1], threads[idx]] = [threads[idx], threads[idx - 1]];
-      threads.forEach((t: any, i: number) => t.threadPosition = i);
-      if (!formation._threadsOrderChanged) formation._threadsOrderChanged = {};
-      formation._threadsOrderChanged[forumId] = true;
-    }
-  }
-
-  moveThreadDown(formation: any, forumId: string, idx: number) {
-    const threads = this.getThreadsForForum(formation, forumId);
-    if (idx < threads.length - 1) {
-      [threads[idx + 1], threads[idx]] = [threads[idx], threads[idx + 1]];
-      threads.forEach((t: any, i: number) => t.threadPosition = i);
-      if (!formation._threadsOrderChanged) formation._threadsOrderChanged = {};
-      formation._threadsOrderChanged[forumId] = true;
-    }
-  }
-
   getCategoryName(uuidCategory: string): string {
     if (!uuidCategory || uuidCategory === 'null' || uuidCategory === 'undefined') return 'Sans catégorie';
     const found = this.channels.find(c => c.uuidCategory === uuidCategory && c.categoryName);
@@ -302,5 +311,9 @@ export class FormationsComponent implements OnInit {
     }
     control.setValue(value);
     control.markAsDirty();
+  }
+
+  getTotalPages() {
+    return Math.max(1, Math.ceil(this.totalFormations / this.limit));
   }
 } 
