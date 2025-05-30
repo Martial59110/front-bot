@@ -6,6 +6,9 @@
     </button>
   </div>
   <div class="formation-card">
+    <div class="alert alert-info mb-3">
+      <strong>Info :</strong> Sur Discord, les channels <b>vocaux</b> seront toujours affichés <b>en dessous</b> des autres types de channels, peu importe leur position dans la liste. L'ordre des channels vocaux est géré entre eux, et l'ordre des autres types de channels est géré séparément.
+    </div>
     <div class="formation-card-header d-flex justify-content-between align-items-center mb-3 flex-wrap">
       <div class="input-group search-group w-auto flex-grow-1 me-3 mb-2 mb-md-0">
         <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
@@ -49,8 +52,6 @@
                   <div class="ms-2">
                     <div *ngFor="let thread of getThreadsForForum(formation, channel.uuid); let i = index" class="d-inline-block me-1 mb-1 align-middle">
                       <span class="badge bg-info text-dark">📝 {{ thread.name }} <span class="text-muted small">#{{ thread.threadPosition }}</span></span>
-                      <button class="btn btn-link btn-sm p-0 align-baseline" (click)="moveThreadUp(formation, channel.uuid, i)" [disabled]="i === 0" title="Monter"><i class="bi bi-arrow-up"></i></button>
-                      <button class="btn btn-link btn-sm p-0 align-baseline" (click)="moveThreadDown(formation, channel.uuid, i)" [disabled]="i === getThreadsForForum(formation, channel.uuid).length - 1" title="Descendre"><i class="bi bi-arrow-down"></i></button>
                     </div>
                   </div>
                   <button *ngIf="formation._threadsOrderChanged && formation._threadsOrderChanged[channel.uuid]" class="btn btn-sm btn-success mt-1 ms-2" (click)="saveThreadsOrder(formation, channel.uuid)">Enregistrer l'ordre des posts</button>
@@ -67,6 +68,20 @@
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="d-flex justify-content-center my-3" *ngIf="totalFormations > limit">
+    <button class="btn btn-outline-secondary me-2"
+            [disabled]="page === 1"
+            (click)="loadFormations(page - 1)">
+      Précédent
+    </button>
+    <span class="align-self-center">Page {{ page }} / {{ getTotalPages() }}</span>
+    <button class="btn btn-outline-secondary ms-2"
+            [disabled]="page >= getTotalPages()"
+            (click)="loadFormations(page + 1)">
+      Suivant
+    </button>
   </div>
 
   <!-- Modal d'ajout de formation -->
@@ -106,7 +121,7 @@
                   </ng-container>
                   <span class="fw-bold">{{ channel.name }}</span>
                   <span class="badge bg-light text-dark ms-2">{{ channel.type }}</span>
-                  <span class="text-muted small ms-2">{{ channel.categoryName }}</span>
+                 
                 </div>
               </div>
             </div>
@@ -123,6 +138,10 @@
                     <button type="button" class="btn btn-sm btn-outline-danger" (click)="removeThread(forum.uuid, i)"><i class="bi bi-x"></i></button>
                   </li>
                 </ul>
+                <div class="alert alert-info mt-2">
+                  <strong>Info :</strong> L'ordre d'affichage des posts sur Discord dépend de l'ordre d'ajout ici.<br>
+                  <span>Le <b>premier post ajouté</b> apparaîtra <b>tout en haut</b> du forum sur Discord.</span>
+                </div>
               </div>
             </div>
           </div>
