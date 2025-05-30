@@ -1,0 +1,27 @@
+.guild-block {
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  background: #f8f9fb;
+  margin-bottom: 2rem;
+  box-shadow: 0 2px 8px #0001;
+}
+
+.guild-title {
+  font-size: 1.3rem;
+  font-weight: 600;
+  color: #d13b3b;
+  margin-bottom: 1rem;
+  letter-spacing: 0.5px;
+}
+
+.members-scrollable {
+  max-height: 350px;
+  overflow-y: auto;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  background: #fff;
+  margin-top: 1rem;
+}
+
+
