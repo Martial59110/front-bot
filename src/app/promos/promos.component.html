@@ -1,3 +1,287 @@
 <div class="page-container">
-  <p><b>Promos</b> works!</p>
+  <div class="d-flex align-items-center mb-3">
+    <h1 class="me-2">Promotions</h1>
+    <button class="btn btn-outline-secondary btn-sm" (click)="loadPromotions()" title="Rafraîchir la liste des promotions">
+      <i class="bi bi-arrow-clockwise"></i>
+    </button>
+  </div>
+  <div class="promo-card">
+    <div class="promo-card-header d-flex justify-content-between align-items-center mb-3 flex-wrap">
+      <div class="input-group search-group w-auto flex-grow-1 me-3 mb-2 mb-md-0">
+        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+        <input type="text" class="form-control border-start-0" placeholder="Rechercher une promotion" (input)="onSearch($event)" />
+      </div>
+      <button class="btn btn-danger" (click)="openModal()">Ajouter</button>
+    </div>
+    <div *ngIf="loading" class="text-center my-4">
+      <span class="spinner-border text-danger" role="status"></span>
+    </div>
+    <div *ngFor="let block of guildBlocks" class="guild-block mb-4">
+      <h2 class="guild-title">Serveur {{ block.guildName }}</h2>
+      <div class="table-responsive">
+        <table class="table table-borderless mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>#</th>
+              <th>Nom</th>
+              <th>Campus</th>
+              <th>Membres</th>
+              <th>Statut</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody cdkDropList (cdkDropListDropped)="drop($event, block)">
+            <tr *ngFor="let promo of block.promotions" cdkDrag>
+              <td>{{ promo.categoryPosition !== null && promo.categoryPosition !== undefined ? promo.categoryPosition : '-' }}</td>
+              <td>{{ promo.name }}</td>
+              <td>{{ promo.campus?.name || '-' }}</td>
+              <td>{{ promo.memberCount ?? 0 }}</td>
+              <td>
+                <span class="badge" [ngClass]="{
+                  'bg-success': promo.status === 'active',
+                  'bg-secondary': promo.status === 'completed',
+                  'bg-danger': promo.status === 'cancelled'
+                }">
+                  {{ promo.status }}
+                </span>
+              </td>
+              <td>
+                <button class="btn btn-sm btn-outline-secondary me-1" (click)="openEditModal(promo)" title="Modifier"><i class="bi bi-pencil"></i></button>
+                <button class="btn btn-sm btn-outline-primary me-1" (click)="openPositionModal(promo)" title="Changer la position"><i class="bi bi-arrow-down-up"></i></button>
+                <button class="btn btn-sm btn-outline-danger" (click)="deletePromo(promo)" title="Supprimer">🗑️</button>
+                <button class="btn btn-sm btn-outline-info me-1" (click)="openMembersModal(promo)" title="Gérer les membres"><i class="bi bi-people"></i></button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pagination -->
+  <div class="d-flex justify-content-between align-items-center mt-3" *ngIf="!loading && totalPromotions > limit">
+    <button class="btn btn-outline-secondary btn-sm" (click)="prevPage()" [disabled]="page === 1">Précédent</button>
+    <span>Page {{ page }} / {{ getTotalPages() }}</span>
+    <button class="btn btn-outline-secondary btn-sm" (click)="nextPage()" [disabled]="page >= getTotalPages()">Suivant</button>
+  </div>
+
+  <!-- Modal d'ajout de promotion -->
+  <div class="modal fade show" tabindex="-1" [ngStyle]="{ display: showModal ? 'block' : 'none', background: 'rgba(0,0,0,0.3)' }" *ngIf="showModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Ajouter une promotion</h5>
+          <button type="button" class="btn-close" (click)="closeModal()"></button>
+        </div>
+        <form [formGroup]="promoForm" (ngSubmit)="submitPromo()">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Serveur Discord</label>
+              <select class="form-select" formControlName="uuidGuild" (change)="onGuildSelect($event)" [class.is-invalid]="promoForm.get('uuidGuild')?.invalid && promoForm.get('uuidGuild')?.touched">
+                <option value="" disabled selected>Choisir un serveur</option>
+                <option *ngFor="let guild of guilds" [value]="guild.uuid">{{ guild.name }}</option>
+              </select>
+              <div class="invalid-feedback" *ngIf="promoForm.get('uuidGuild')?.invalid && promoForm.get('uuidGuild')?.touched">Serveur obligatoire</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Formation</label>
+              <div class="input-group">
+                <input type="text" class="form-control" [value]="selectedFormation?.name || ''" placeholder="Choisir une formation" readonly (click)="openFormationModal()" [class.is-invalid]="promoForm.get('uuidFormation')?.invalid && promoForm.get('uuidFormation')?.touched">
+                <button type="button" class="btn btn-outline-secondary" (click)="openFormationModal()">Choisir</button>
+              </div>
+              <div class="invalid-feedback" *ngIf="promoForm.get('uuidFormation')?.invalid && promoForm.get('uuidFormation')?.touched">Formation obligatoire</div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Nom de la promotion</label>
+              <input type="text" class="form-control" formControlName="name" [class.is-invalid]="promoForm.get('name')?.invalid && promoForm.get('name')?.touched">
+              <div class="invalid-feedback" *ngIf="promoForm.get('name')?.invalid && promoForm.get('name')?.touched">Nom obligatoire</div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Date de début</label>
+                <input type="date" class="form-control" formControlName="startDate" [class.is-invalid]="promoForm.get('startDate')?.invalid && promoForm.get('startDate')?.touched">
+                <div class="invalid-feedback" *ngIf="promoForm.get('startDate')?.invalid && promoForm.get('startDate')?.touched">Date de début obligatoire</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Date de fin</label>
+                <input type="date" class="form-control" formControlName="endDate" [class.is-invalid]="promoForm.get('endDate')?.invalid && promoForm.get('endDate')?.touched">
+                <div class="invalid-feedback" *ngIf="promoForm.get('endDate')?.invalid && promoForm.get('endDate')?.touched">Date de fin obligatoire</div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Statut</label>
+              <select class="form-select" formControlName="status">
+                <option value="active">Active</option>
+                <option value="completed">Terminée</option>
+                <option value="cancelled">Annulée</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeModal()">Annuler</button>
+            <button type="submit" class="btn btn-danger" [disabled]="promoForm.invalid || submitting">
+              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+              Ajouter
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal d'édition de la promotion -->
+  <div class="modal fade show" tabindex="-1" [ngStyle]="{ display: showEditModal ? 'block' : 'none', background: 'rgba(0,0,0,0.3)' }" *ngIf="showEditModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Modifier la promotion</h5>
+          <button type="button" class="btn-close" (click)="closeEditModal()"></button>
+        </div>
+        <form [formGroup]="editPromoForm" (ngSubmit)="submitEditPromo()">
+          <div class="modal-body">
+            <div class="mb-3">
+              <label class="form-label">Nom de la promotion</label>
+              <input type="text" class="form-control" formControlName="name" [class.is-invalid]="editPromoForm.get('name')?.invalid && editPromoForm.get('name')?.touched">
+              <div class="invalid-feedback" *ngIf="editPromoForm.get('name')?.invalid && editPromoForm.get('name')?.touched">Nom obligatoire</div>
+            </div>
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Date de début</label>
+                <input type="date" class="form-control" formControlName="startDate" [class.is-invalid]="editPromoForm.get('startDate')?.invalid && editPromoForm.get('startDate')?.touched">
+                <div class="invalid-feedback" *ngIf="editPromoForm.get('startDate')?.invalid && editPromoForm.get('startDate')?.touched">Date de début obligatoire</div>
+              </div>
+              <div class="col-md-6 mb-3">
+                <label class="form-label">Date de fin</label>
+                <input type="date" class="form-control" formControlName="endDate" [class.is-invalid]="editPromoForm.get('endDate')?.invalid && editPromoForm.get('endDate')?.touched">
+                <div class="invalid-feedback" *ngIf="editPromoForm.get('endDate')?.invalid && editPromoForm.get('endDate')?.touched">Date de fin obligatoire</div>
+              </div>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Statut</label>
+              <select class="form-select" formControlName="status">
+                <option value="active">Active</option>
+                <option value="completed">Terminée</option>
+                <option value="cancelled">Annulée</option>
+              </select>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" (click)="closeEditModal()">Annuler</button>
+            <button type="submit" class="btn btn-danger" [disabled]="editPromoForm.invalid || submitting">
+              <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+              Modifier
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale de sélection de formation -->
+  <div class="modal fade show" tabindex="-1" [ngStyle]="{ display: showFormationModal ? 'block' : 'none', background: 'rgba(0,0,0,0.3)' }" *ngIf="showFormationModal">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Sélectionner une formation</h5>
+          <button type="button" class="btn-close" (click)="closeFormationModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <input type="text" class="form-control" placeholder="Rechercher une formation..." [(ngModel)]="formationSearchTerm" (ngModelChange)="loadFormationsPage(1, formationSearchTerm)">
+          </div>
+          <ul class="list-group mb-3">
+            <li *ngFor="let formation of formationList" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" (click)="selectFormation(formation)" style="cursor:pointer;">
+              <span>{{ formation.name }}</span>
+              <span class="badge bg-light text-dark">{{ formation.uuidGuild }}</span>
+            </li>
+          </ul>
+          <div class="d-flex justify-content-between align-items-center">
+            <button class="btn btn-outline-secondary btn-sm" (click)="loadFormationsPage(formationPage - 1, formationSearchTerm)" [disabled]="formationPage === 1">Précédent</button>
+            <span>Page {{ formationPage }} / {{ getFormationTotalPages() }}</span>
+            <button class="btn btn-outline-secondary btn-sm" (click)="loadFormationsPage(formationPage + 1, formationSearchTerm)" [disabled]="formationPage >= getFormationTotalPages()">Suivant</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de position -->
+  <div class="modal fade show" tabindex="-1" [ngStyle]="{ display: showPositionModal ? 'block' : 'none', background: 'rgba(0,0,0,0.3)' }" *ngIf="showPositionModal">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Changer la position de la catégorie</h5>
+          <button type="button" class="btn-close" (click)="closePositionModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Nouvelle position</label>
+            <input type="number" class="form-control" [(ngModel)]="newPosition" min="0">
+            <small class="form-text text-muted">0 = tout en haut, 1 = deuxième position, etc.</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closePositionModal()">Annuler</button>
+          <button type="button" class="btn btn-primary" (click)="updatePosition()" [disabled]="submitting">
+            <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2"></span>
+            Modifier
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modale gestion des membres -->
+  <div class="modal fade show" tabindex="-1" [ngStyle]="{ display: showMembersModal ? 'block' : 'none', background: 'rgba(0,0,0,0.3)' }" *ngIf="showMembersModal">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Gérer les membres de la promotion <b>{{ selectedPromoForMembers?.name }}</b></h5>
+          <button type="button" class="btn-close" (click)="closeMembersModal()"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label">Ajouter un membre</label>
+            <input type="text" class="form-control mb-2" placeholder="Rechercher un membre..." [(ngModel)]="memberSearchTerm" (ngModelChange)="onMemberSearchChange($event)">
+            <div *ngIf="filteredMembers.length; else noAvailableMembers">
+              <ul class="list-group">
+                <li *ngFor="let member of filteredMembers" class="list-group-item d-flex justify-content-between align-items-center">
+                  <div class="d-flex align-items-center">
+                    <img [src]="getAvatarUrl(member)" alt="avatar" class="rounded-circle me-2" width="32" height="32">
+                    <span>{{ member.displayName || member.username || member.guildUsername || member.uuidMember }}</span>
+                  </div>
+                  <button class="btn btn-sm btn-success" (click)="addMemberToPromo(member)" [disabled]="addingMember">Ajouter</button>
+                </li>
+              </ul>
+              <!-- Pagination pour les membres disponibles -->
+              <div class="d-flex justify-content-between align-items-center mt-2" *ngIf="memberTotal > memberLimit">
+                <button class="btn btn-outline-secondary btn-sm" (click)="prevMemberPage()" [disabled]="memberPage === 1">Précédent</button>
+                <span>Page {{ memberPage }} / {{ getMemberTotalPages() }}</span>
+                <button class="btn btn-outline-secondary btn-sm" (click)="nextMemberPage()" [disabled]="memberPage >= getMemberTotalPages()">Suivant</button>
+              </div>
+            </div>
+            <ng-template #noAvailableMembers>
+              <div class="text-muted small">Aucun membre à ajouter.</div>
+            </ng-template>
+          </div>
+          <hr>
+          <div>
+            <label class="form-label">Membres actuels de la promotion</label>
+            <ul class="list-group">
+              <li *ngFor="let member of promoMembers" class="list-group-item d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                  <img [src]="getAvatarUrl(member)" alt="avatar" class="rounded-circle me-2" width="32" height="32">
+                  <span>{{ member.displayName || member.username || member.guildUsername || member.uuidMember }}</span>
+                </div>
+                <button class="btn btn-sm btn-outline-danger" (click)="removeMemberFromPromo(member)" [disabled]="removingMember">Retirer</button>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeMembersModal()">Fermer</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
