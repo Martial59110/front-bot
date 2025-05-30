@@ -1,0 +1,61 @@
+.page-container {
+  padding: 20px;
+}
+
+.promo-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+}
+
+.promo-card-header {
+  .search-group {
+    max-width: 300px;
+  }
+}
+
+.table {
+  th {
+    font-weight: 600;
+    color: #666;
+  }
+  
+  td {
+    vertical-align: middle;
+  }
+}
+
+.modal {
+  .modal-content {
+    border: none;
+    border-radius: 8px;
+  }
+  
+  .modal-header {
+    border-bottom: 1px solid #eee;
+  }
+  
+  .modal-footer {
+    border-top: 1px solid #eee;
+  }
+}
+
+.btn-danger {
+  background-color: #dc3545;
+  border-color: #dc3545;
+  
+  &:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+  }
+}
+
+.btn-outline-secondary {
+  &:hover {
+    background-color: #6c757d;
+    border-color: #6c757d;
+  }
+}
+
+
