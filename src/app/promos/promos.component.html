@@ -16,46 +16,55 @@
     <div *ngIf="loading" class="text-center my-4">
       <span class="spinner-border text-danger" role="status"></span>
     </div>
-    <div *ngFor="let block of guildBlocks" class="guild-block mb-4">
-      <h2 class="guild-title">Serveur {{ block.guildName }}</h2>
-      <div class="table-responsive">
-        <table class="table table-borderless mb-0">
-          <thead class="table-light">
-            <tr>
-              <th>#</th>
-              <th>Nom</th>
-              <th>Campus</th>
-              <th>Membres</th>
-              <th>Statut</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody cdkDropList (cdkDropListDropped)="drop($event, block)">
-            <tr *ngFor="let promo of block.promotions" cdkDrag>
-              <td>{{ promo.categoryPosition !== null && promo.categoryPosition !== undefined ? promo.categoryPosition : '-' }}</td>
-              <td>{{ promo.name }}</td>
-              <td>{{ promo.campus?.name || '-' }}</td>
-              <td>{{ promo.memberCount ?? 0 }}</td>
-              <td>
-                <span class="badge" [ngClass]="{
-                  'bg-success': promo.status === 'active',
-                  'bg-secondary': promo.status === 'completed',
-                  'bg-danger': promo.status === 'cancelled'
-                }">
-                  {{ promo.status }}
-                </span>
-              </td>
-              <td>
-                <button class="btn btn-sm btn-outline-secondary me-1" (click)="openEditModal(promo)" title="Modifier"><i class="bi bi-pencil"></i></button>
-                <button class="btn btn-sm btn-outline-primary me-1" (click)="openPositionModal(promo)" title="Changer la position"><i class="bi bi-arrow-down-up"></i></button>
-                <button class="btn btn-sm btn-outline-danger" (click)="deletePromo(promo)" title="Supprimer">🗑️</button>
-                <button class="btn btn-sm btn-outline-info me-1" (click)="openMembersModal(promo)" title="Gérer les membres"><i class="bi bi-people"></i></button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <ng-container *ngIf="!loading">
+      <ng-container *ngIf="guildBlocks && guildBlocks.length > 0; else noPromotions">
+        <div *ngFor="let block of guildBlocks" class="guild-block mb-4">
+          <h2 class="guild-title">Serveur {{ block.guildName }}</h2>
+          <div class="table-responsive">
+            <table class="table table-borderless mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Nom</th>
+                  <th>Campus</th>
+                  <th>Membres</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody cdkDropList (cdkDropListDropped)="drop($event, block)">
+                <tr *ngFor="let promo of block.promotions || []" cdkDrag>
+                  <td>{{ promo.categoryPosition !== null && promo.categoryPosition !== undefined ? promo.categoryPosition : '-' }}</td>
+                  <td>{{ promo.name }}</td>
+                  <td>{{ promo.campus?.name || '-' }}</td>
+                  <td>{{ promo.memberCount ?? 0 }}</td>
+                  <td>
+                    <span class="badge" [ngClass]="{
+                      'bg-success': promo.status === 'active',
+                      'bg-secondary': promo.status === 'completed',
+                      'bg-danger': promo.status === 'cancelled'
+                    }">
+                      {{ promo.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <button class="btn btn-sm btn-outline-secondary me-1" (click)="openEditModal(promo)" title="Modifier"><i class="bi bi-pencil"></i></button>
+                    <button class="btn btn-sm btn-outline-primary me-1" (click)="openPositionModal(promo)" title="Changer la position"><i class="bi bi-arrow-down-up"></i></button>
+                    <button class="btn btn-sm btn-outline-danger" (click)="deletePromo(promo)" title="Supprimer">🗑️</button>
+                    <button class="btn btn-sm btn-outline-info me-1" (click)="openMembersModal(promo)" title="Gérer les membres"><i class="bi bi-people"></i></button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </ng-container>
+      <ng-template #noPromotions>
+        <div class="text-center my-4">
+          Aucune promotion trouvée
+        </div>
+      </ng-template>
+    </ng-container>
   </div>
 
   <!-- Pagination -->
@@ -84,6 +93,14 @@
               <div class="invalid-feedback" *ngIf="promoForm.get('uuidGuild')?.invalid && promoForm.get('uuidGuild')?.touched">Serveur obligatoire</div>
             </div>
             <div class="mb-3">
+              <label class="form-label">Campus</label>
+              <select class="form-select" formControlName="uuidCampus" [class.is-invalid]="promoForm.get('uuidCampus')?.invalid && promoForm.get('uuidCampus')?.touched">
+                <option value="" disabled selected>Choisir un campus</option>
+                <option *ngFor="let campus of campuses" [value]="campus.uuidCampus">{{ campus.name }}</option>
+              </select>
+              <div class="invalid-feedback" *ngIf="promoForm.get('uuidCampus')?.invalid && promoForm.get('uuidCampus')?.touched">Campus obligatoire</div>
+            </div>
+            <div class="mb-3">
               <label class="form-label">Formation</label>
               <div class="input-group">
                 <input type="text" class="form-control" [value]="selectedFormation?.name || ''" placeholder="Choisir une formation" readonly (click)="openFormationModal()" [class.is-invalid]="promoForm.get('uuidFormation')?.invalid && promoForm.get('uuidFormation')?.touched">
@@ -100,13 +117,20 @@
               <div class="col-md-6 mb-3">
                 <label class="form-label">Date de début</label>
                 <input type="date" class="form-control" formControlName="startDate" [class.is-invalid]="promoForm.get('startDate')?.invalid && promoForm.get('startDate')?.touched">
-                <div class="invalid-feedback" *ngIf="promoForm.get('startDate')?.invalid && promoForm.get('startDate')?.touched">Date de début obligatoire</div>
+                <div class="invalid-feedback" *ngIf="promoForm.get('startDate')?.errors?.['required'] && promoForm.get('startDate')?.touched">Date de début obligatoire</div>
+                <div class="invalid-feedback" *ngIf="promoForm.get('startDate')?.errors?.['invalidDate']">Date invalide</div>
+                <div class="invalid-feedback" *ngIf="promoForm.get('startDate')?.errors?.['pastDate']">La date ne peut pas être dans le passé</div>
               </div>
               <div class="col-md-6 mb-3">
                 <label class="form-label">Date de fin</label>
                 <input type="date" class="form-control" formControlName="endDate" [class.is-invalid]="promoForm.get('endDate')?.invalid && promoForm.get('endDate')?.touched">
-                <div class="invalid-feedback" *ngIf="promoForm.get('endDate')?.invalid && promoForm.get('endDate')?.touched">Date de fin obligatoire</div>
+                <div class="invalid-feedback" *ngIf="promoForm.get('endDate')?.errors?.['required'] && promoForm.get('endDate')?.touched">Date de fin obligatoire</div>
+                <div class="invalid-feedback" *ngIf="promoForm.get('endDate')?.errors?.['invalidDate']">Date invalide</div>
+                <div class="invalid-feedback" *ngIf="promoForm.get('endDate')?.errors?.['pastDate']">La date ne peut pas être dans le passé</div>
               </div>
+            </div>
+            <div class="alert alert-danger" *ngIf="promoForm.errors?.['dateRange']">
+              La date de fin doit être postérieure à la date de début
             </div>
             <div class="mb-3">
               <label class="form-label">Statut</label>
