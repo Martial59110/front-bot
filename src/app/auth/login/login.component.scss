@@ -1,0 +1,208 @@
+.login-container {
+  min-height: 100vh;
+  min-width: 100vw;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(120deg, #667eea 0%, #764ba2 100%);
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.login-card {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(80, 0, 60, 0.13), 0 2px 8px rgba(0,0,0,0.04);
+  padding: 48px 36px 40px 36px;
+  max-width: 400px;
+  width: 95vw;
+  text-align: center;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.login-header {
+  margin-bottom: 18px;
+}
+
+.logo-container {
+  margin-bottom: 10px;
+}
+
+.logo {
+  height: 60px;
+  width: auto;
+  margin-bottom: 8px;
+}
+
+.login-title {
+  font-size: 2.1rem;
+  font-weight: 800;
+  color: #2d3748;
+  margin: 0 0 10px 0;
+  letter-spacing: -1px;
+}
+
+.login-subtitle {
+  color: #718096;
+  font-size: 1.08rem;
+  margin: 0;
+  line-height: 1.5;
+}
+
+.login-content {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+}
+
+.discord-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 16px;
+  background: #f7fafc;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.discord-icon {
+  color: #5865f2;
+  flex-shrink: 0;
+  font-size: 2rem;
+}
+
+.discord-text h3 {
+  margin: 0 0 5px 0;
+  font-size: 1.13rem;
+  font-weight: 700;
+  color: #2d3748;
+}
+
+.discord-text p {
+  margin: 0;
+  font-size: 0.97rem;
+  color: #718096;
+  line-height: 1.4;
+}
+
+.discord-login-btn {
+  background: #5865f2;
+  color: white;
+  border: none;
+  border-radius: 13px;
+  padding: 18px 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(.4,2,.6,1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  width: 100%;
+  box-shadow: 0 4px 16px rgba(88, 101, 242, 0.08);
+}
+
+.discord-login-btn:hover:not(:disabled) {
+  background: #4752c4;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 8px 25px rgba(88, 101, 242, 0.18);
+}
+
+.discord-login-btn:active:not(:disabled) {
+  transform: translateY(0) scale(0.98);
+}
+
+.discord-login-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-content {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.discord-logo {
+  flex-shrink: 0;
+}
+
+.login-footer {
+  margin-top: 24px;
+}
+
+.security-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.93rem;
+  color: #a0aec0;
+  margin: 0;
+  justify-content: center;
+
+  svg {
+    color: #48bb78;
+    flex-shrink: 0;
+  }
+}
+
+.simplon-logo-text {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.simplon-title {
+  font-size: 2.2rem;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  color: #c80036;
+  font-family: 'Montserrat', 'Inter', Arial, sans-serif;
+}
+
+.simplon-subtitle {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #c80036;
+  letter-spacing: 0.18em;
+  font-family: 'Montserrat', 'Inter', Arial, sans-serif;
+}
+
+// Responsive design
+@media (max-width: 600px) {
+  .login-card {
+    padding: 18px 4px 18px 4px;
+    max-width: 99vw;
+    gap: 16px;
+  }
+  .login-title {
+    font-size: 1.3rem;
+  }
+  .discord-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+    font-size: 0.98rem;
+  }
+  .discord-login-btn {
+    padding: 12px 0;
+    font-size: 0.98rem;
+  }
+  .logo {
+    height: 44px;
+  }
+} 
