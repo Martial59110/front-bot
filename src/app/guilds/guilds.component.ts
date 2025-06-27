@@ -18,6 +18,7 @@ export class GuildsComponent implements OnInit {
   loading = false;
   submitting = false;
   searchTerm: string = '';
+  errorMessage = '';
 
   constructor(private http: HttpClient, private fb: FormBuilder) {
     this.guildForm = this.fb.group({
@@ -66,7 +67,7 @@ export class GuildsComponent implements OnInit {
   submitGuild() {
     if (this.guildForm.invalid) return;
     this.submitting = true;
-
+    this.errorMessage = '';
     // Appel à l'API pour créer la guilde
     this.http.post('/api/guilds', {
       uuid: this.guildForm.value.uuid,
@@ -81,6 +82,7 @@ export class GuildsComponent implements OnInit {
       },
       error: (error) => {
         console.error('Erreur lors de la création de la guilde:', error);
+        this.errorMessage = error?.error?.message || 'Erreur lors de la création de la guilde';
         this.submitting = false;
       }
     });
