@@ -1,6 +1,8 @@
+// Jasmine imports are global
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { CanauxComponent } from './canaux.component';
+import { HttpClientTestingModule } from '@angular/common/http/testing';
+import { NO_ERRORS_SCHEMA } from '@angular/core';
 
 describe('CanauxComponent', () => {
   let component: CanauxComponent;
@@ -8,7 +10,11 @@ describe('CanauxComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [CanauxComponent]
+      imports: [
+        CanauxComponent,
+        HttpClientTestingModule
+      ],
+      schemas: [NO_ERRORS_SCHEMA]
     })
     .compileComponents();
 
