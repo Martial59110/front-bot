@@ -56,9 +56,10 @@
         </div>
         <form [formGroup]="guildForm" (ngSubmit)="submitGuild()">
           <div class="modal-body">
+            <div *ngIf="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
             <div class="mb-3">
-              <label class="form-label">ID Discord</label>
-              <input type="text" class="form-control" formControlName="uuid" [class.is-invalid]="guildForm.get('uuid')?.invalid && guildForm.get('uuid')?.touched">
+              <label class="form-label" for="guild-uuid">ID Discord</label>
+              <input id="guild-uuid" type="text" class="form-control" formControlName="uuid" [class.is-invalid]="guildForm.get('uuid')?.invalid && guildForm.get('uuid')?.touched">
               <div class="invalid-feedback" *ngIf="guildForm.get('uuid')?.invalid && guildForm.get('uuid')?.touched">ID Discord obligatoire</div>
             </div>
           </div>
