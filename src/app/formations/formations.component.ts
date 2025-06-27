@@ -208,7 +208,8 @@ export class FormationsComponent implements OnInit {
   }
 
   deleteFormation(formation: any) {
-    if (!confirm(`Supprimer la formation "${formation.name}" ? Cette action est irréversible.`)) return;
+    if (!confirm(`Supprimer la formation "${formation.name}" ? 
+    Cette action est irréversible.`)) return;
     this.http.delete(`/api/formations/${formation.uuidFormation}`).subscribe({
       next: () => this.loadFormations(),
       error: () => {}
@@ -219,7 +220,8 @@ export class FormationsComponent implements OnInit {
     this.editingFormation = formation;
     this.editFormationForm.patchValue({
       name: formation.name,
-      channelIds: (formation.channels || []).map((c: any) => c.uuid)
+      channelIds: (formation.channels || 
+      []).map((c: any) => c.uuid)
     });
     this.showEditModal = true;
   }
@@ -236,7 +238,8 @@ export class FormationsComponent implements OnInit {
       name: this.editFormationForm.value.name,
       channelIds: this.editFormationForm.value.channelIds
     };
-    this.http.patch(`/api/formations/${this.editingFormation.uuidFormation}`, payload).subscribe({
+    this.http.patch(`/api/formations/${this.editingFormation.uuidFormation}`
+    , payload).subscribe({
       next: () => { this.closeEditModal(); this.loadFormations(); },
       error: () => {}
     });
