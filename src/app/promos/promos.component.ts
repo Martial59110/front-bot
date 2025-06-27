@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors, ValidatorFn } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { Subject } from 'rxjs';
@@ -60,22 +60,25 @@ export class PromosComponent implements OnInit {
   memberLimit = 7;
   memberTotal = 0;
   promoMemberCounts: { [uuidGuild: string]: number } = {};
+  campuses: any[] = [];
 
   constructor(private http: HttpClient, private fb: FormBuilder) {
     this.promoForm = this.fb.group({
       uuidGuild: ['', Validators.required],
       uuidFormation: ['', Validators.required],
       name: ['', Validators.required],
-      startDate: ['', Validators.required],
-      endDate: ['', Validators.required],
-      status: ['active', Validators.required]
-    });
+      startDate: ['', [Validators.required, this.dateValidator()]],
+      endDate: ['', [Validators.required, this.dateValidator()]],
+      status: ['active', Validators.required],
+      uuidCampus: ['', Validators.required]
+    }, { validators: this.dateRangeValidator() });
+
     this.editPromoForm = this.fb.group({
       name: ['', Validators.required],
-      startDate: ['', Validators.required],
-      endDate: ['', Validators.required],
+      startDate: ['', [Validators.required, this.dateValidator()]],
+      endDate: ['', [Validators.required, this.dateValidator()]],
       status: ['active', Validators.required]
-    });
+    }, { validators: this.dateRangeValidator() });
   }
 
   ngOnInit() {
@@ -87,7 +90,10 @@ export class PromosComponent implements OnInit {
   loadGuilds() {
     this.http.get<any>('/api/guilds').subscribe({
       next: (data) => {
-        this.guilds = Array.isArray(data) ? data : data.data;
+        this.guilds = Array.isArray(data) ? data : (Array.isArray(data.data) ? data.data : []);
+      },
+      error: () => {
+        this.guilds = [];
       }
     });
   }
@@ -111,30 +117,59 @@ export class PromosComponent implements OnInit {
     const uuidGuild = this.promoForm.get('uuidGuild')?.value;
     let url = `/api/formations/lookup?page=${page}&limit=${this.asyncFormationsLimit}`;
     if (search && search.trim()) url += `&search=${encodeURIComponent(search.trim())}`;
-    this.http.get<any>(url).subscribe(res => {
-      console.log('Résultat formations async', res);
-      let formationsArr: any[] = [];
-      if (Array.isArray(res.data?.data)) {
-        formationsArr = res.data.data;
-      } else if (Array.isArray(res.data)) {
-        formationsArr = res.data;
-      } else if (Array.isArray(res)) {
-        formationsArr = res;
+    
+    this.http.get<any>(url).subscribe({
+      next: (res) => {
+        let formationsArr: any[] = [];
+        if (Array.isArray(res.data?.data)) {
+          formationsArr = res.data.data;
+        } else if (Array.isArray(res.data)) {
+          formationsArr = res.data;
+        } else if (Array.isArray(res)) {
+          formationsArr = res;
+        }
+        this.asyncFormations = formationsArr.filter((f: any) => !uuidGuild || f.uuidGuild === uuidGuild);
+        this.asyncFormationsTotal = res.total || this.asyncFormations.length;
+        this.asyncFormationsPage = page;
+      },
+      error: () => {
+        this.asyncFormations = [];
+        this.asyncFormationsTotal = 0;
       }
-      this.asyncFormations = formationsArr.filter((f: any) => !uuidGuild || f.uuidGuild === uuidGuild);
-      this.asyncFormationsTotal = res.total || this.asyncFormations.length;
-      this.asyncFormationsPage = page;
     });
   }
 
   onGuildSelect(event: Event) {
     const select = event.target as HTMLSelectElement;
     const uuidGuild = select.value;
-    this.promoForm.patchValue({ uuidFormation: '' });
+    console.log('Serveur sélectionné:', uuidGuild);
+    
+    this.promoForm.patchValue({ 
+      uuidFormation: '',
+      uuidCampus: '' // Réinitialiser aussi le campus
+    });
     this.asyncFormations = [];
     this.asyncFormationsTotal = 0;
+    
+    // Charger les campus spécifiques au serveur
     if (uuidGuild) {
+      console.log('Chargement des campus pour le serveur:', uuidGuild);
+      this.http.get<any>(`/api/campuses?uuidGuild=${uuidGuild}`).subscribe({
+        next: (data) => {
+          console.log('Réponse API campus:', data);
+          console.log('Contenu de data.data:', data.data);
+          this.campuses = Array.isArray(data.data?.data) ? data.data.data : [];
+          console.log('Campus chargés:', this.campuses);
+        },
+        error: (error) => {
+          console.error('Erreur lors du chargement des campus:', error);
+          this.campuses = [];
+        }
+      });
       this.searchFormationsAsync('', 1);
+    } else {
+      console.log('Aucun serveur sélectionné, réinitialisation des campus');
+      this.campuses = [];
     }
   }
 
@@ -145,52 +180,74 @@ export class PromosComponent implements OnInit {
 
   loadPromotions(page: number = this.page) {
     this.loading = true;
+    this.guildBlocks = []; // Initialiser comme tableau vide
     let url = `/api/promotions?page=${page}&limit=${this.limit}`;
     if (this.searchTerm) {
       url += `&search=${encodeURIComponent(this.searchTerm)}`;
     }
-    
+  
     this.http.get<any>(url).subscribe({
       next: (response) => {
-        if (response?.data?.data?.data) {
-          const promos = response.data.data.data;
+        try {
+          console.log('Réponse API promotions:', response);
+          
+          // L'API backend retourne un wrapper : { message, data, statusCode }
+          // Les promotions sont dans response.data.data
+          let promos = [];
+          if (response?.data?.data && Array.isArray(response.data.data)) {
+            promos = response.data.data;
+          } else if (response?.data && Array.isArray(response.data)) {
+            promos = response.data;
+          } else if (Array.isArray(response)) {
+            promos = response;
+          }
+  
+          console.log('Promotions extraites:', promos);
+  
           // Grouper par guild
-          const guildMap: { [uuidGuild: string]: any } = {};
+          const guildMap = new Map();
           promos.forEach((promo: any) => {
-            if (!guildMap[promo.uuidGuild]) {
-              guildMap[promo.uuidGuild] = {
+            if (!guildMap.has(promo.uuidGuild)) {
+              guildMap.set(promo.uuidGuild, {
                 uuidGuild: promo.uuidGuild,
                 guildName: promo.guildName || promo.guild?.name || promo.uuidGuild,
                 promotions: []
-              };
+              });
             }
-            guildMap[promo.uuidGuild].promotions.push(promo);
+
+            // 🔍 Vérif debug
+            console.log('Promo analysée :', promo);
+
+            const guildEntry = guildMap.get(promo.uuidGuild);
+
+            // ✅ Sécurité : on force promotions à un tableau si jamais c'est buggé
+            if (!Array.isArray(guildEntry.promotions)) {
+              guildEntry.promotions = [];
+            }
+
+            guildEntry.promotions.push(promo);
           });
-          // Trier les promotions de chaque guild par position
-          this.guildBlocks = Object.values(guildMap).map((block: any) => {
-            block.promotions = block.promotions.sort((a: any, b: any) => {
-              if (a.categoryPosition == null) return 1;
-              if (b.categoryPosition == null) return -1;
-              return a.categoryPosition - b.categoryPosition;
-            });
-            const guild = this.guilds.find(g => g.uuid === block.uuidGuild);
-            block.memberCount = guild?.memberCount ?? 0;
-            return block;
-          });
-          this.totalPromotions = promos.length;
-        } else {
+
+          this.guildBlocks = Array.from(guildMap.values());
+          this.totalPromotions = response.data?.total || promos.length;
+          console.log('Guild blocks créés:', this.guildBlocks);
+        } catch (error) {
+          console.error('Erreur lors du traitement des données:', error);
           this.guildBlocks = [];
           this.totalPromotions = 0;
         }
         this.page = page;
         this.loading = false;
       },
-      error: () => { 
-        this.guildBlocks = []; 
-        this.loading = false; 
+      error: (error) => {
+        console.error('Erreur lors du chargement des promotions:', error);
+        this.guildBlocks = [];
+        this.totalPromotions = 0;
+        this.loading = false;
       }
     });
   }
+  
 
   onSearch(event: Event) {
     const input = event.target as HTMLInputElement;
@@ -203,6 +260,8 @@ export class PromosComponent implements OnInit {
     this.showModal = true;
     this.promoForm.reset({ status: 'active' });
     this.formations = [];
+    this.asyncFormations = [];
+    this.selectedFormation = null;
   }
 
   closeModal() {
@@ -285,14 +344,23 @@ export class PromosComponent implements OnInit {
       return;
     }
     this.submitting = true;
-    const payload: any = {
+
+    // Formatage des dates en ISO string avec timezone
+    const formatDate = (dateStr: string) => {
+      const date = new Date(dateStr);
+      return date.toISOString();
+    };
+
+    const payload = {
       name: raw.name,
-      startDate: raw.startDate,
-      endDate: raw.endDate,
+      startDate: formatDate(raw.startDate),
+      endDate: formatDate(raw.endDate),
       uuidGuild: raw.uuidGuild,
       uuidFormation: this.selectedFormation?.uuidFormation || raw.uuidFormation,
-      status: raw.status
+      status: raw.status,
+      uuidCampus: raw.uuidCampus
     };
+
     console.log('Payload envoyé :', payload);
     this.http.post('/api/promotions', payload).subscribe({
       next: () => {
@@ -300,7 +368,8 @@ export class PromosComponent implements OnInit {
         this.closeModal();
         this.loadPromotions();
       },
-      error: () => {
+      error: (error) => {
+        console.error('Erreur lors de la création de la promotion:', error);
         this.submitting = false;
       }
     });
@@ -511,7 +580,7 @@ export class PromosComponent implements OnInit {
       next: () => {
         this.addingMember = false;
         this.loadPromoMembers();
-        this.filterMembers();
+        this.loadAvailableMembers(this.memberSearchTerm);
       },
       error: () => { this.addingMember = false; }
     });
@@ -524,12 +593,12 @@ export class PromosComponent implements OnInit {
       next: () => {
         this.removingMember = false;
         this.loadPromoMembers();
-        this.filterMembers();
+        this.loadAvailableMembers(this.memberSearchTerm); 
       },
       error: () => { this.removingMember = false; }
     });
   }
-
+  
   loadGuildBlocks() {
     this.http.get<any>('/api/guilds').subscribe({
       next: (guildsData) => {
@@ -556,5 +625,65 @@ export class PromosComponent implements OnInit {
         this.promoMemberCounts[uuidGuild] = 0;
       }
     });
+  }
+
+  loadCampuses(uuidGuild: string) {
+    if (!uuidGuild) {
+      console.log('Aucun uuidGuild fourni pour le chargement des campus');
+      this.campuses = [];
+      return;
+    }
+    
+    console.log('Chargement des campus pour le serveur:', uuidGuild);
+    this.http.get<any>(`/api/campuses?uuidGuild=${uuidGuild}`).subscribe({
+      next: (data) => {
+        console.log('Réponse API campus:', data);
+        console.log('Contenu de data.data:', data.data);
+        this.campuses = Array.isArray(data.data?.data) ? data.data.data : [];
+        console.log('Campus chargés:', this.campuses);
+      },
+      error: (error) => {
+        console.error('Erreur lors du chargement des campus:', error);
+        this.campuses = [];
+      }
+    });
+  }
+
+  dateValidator(): ValidatorFn {
+    return (control: AbstractControl): ValidationErrors | null => {
+      const date = new Date(control.value);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      if (isNaN(date.getTime())) {
+        return { invalidDate: true };
+      }
+
+      if (date < today) {
+        return { pastDate: true };
+      }
+
+      return null;
+    };
+  }
+
+  dateRangeValidator(): ValidatorFn {
+    return (formGroup: AbstractControl): ValidationErrors | null => {
+      const startDate = formGroup.get('startDate')?.value;
+      const endDate = formGroup.get('endDate')?.value;
+
+      if (!startDate || !endDate) {
+        return null;
+      }
+
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+
+      if (end < start) {
+        return { dateRange: true };
+      }
+
+      return null;
+    };
   }
 }
