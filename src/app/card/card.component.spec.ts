@@ -1,5 +1,5 @@
+// Jasmine imports are global
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-
 import { CardComponent } from './card.component';
 
 describe('CardComponent', () => {
@@ -19,5 +19,10 @@ describe('CardComponent', () => {
 
   it('should create', () => {
     expect(component).toBeTruthy();
+  });
+
+  it('should display card works message', () => {
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.querySelector('p')?.textContent).toContain('card works!');
   });
 });
