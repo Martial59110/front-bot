@@ -4,6 +4,8 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { NgSelectModule } from '@ng-select/ng-select';
 import { FormsModule } from '@angular/forms';
+import { CustomValidators } from '../shared/validators/custom.validators';
+import { SanitizationService } from '../shared/services/sanitization.service';
 
 @Component({
   selector: 'app-membres',
@@ -62,20 +64,28 @@ export class MembresComponent implements OnInit {
   deletingMember = false;
   memberToDelete: any = null;
 
-  constructor(private http: HttpClient, private fb: FormBuilder) {
+  constructor(
+    private http: HttpClient, 
+    private fb: FormBuilder,
+    private sanitizationService: SanitizationService,
+    private customValidators: CustomValidators
+  ) {
     this.editPseudoForm = this.fb.group({
-      guildUsername: ['', Validators.required]
+      guildUsername: ['', [Validators.required, this.customValidators.discordUsername()]]
     });
+
     this.editPromosForm = this.fb.group({
       followedPromotions: [[]]
     });
+
     this.addMemberForm = this.fb.group({
-      guildUsername: ['', Validators.required]
+      guildUsername: ['', [Validators.required, this.customValidators.discordUsername()]]
     });
+
     this.addDiscordUserForm = this.fb.group({
-      uuidDiscord: ['', [Validators.required, Validators.pattern(/^\d{17,19}$/)]],
-      discordUsername: ['', Validators.required],
-      discriminator: ['', [Validators.required, Validators.pattern(/^\d{4}$/)]]
+      uuidDiscord: ['', [Validators.required, this.customValidators.discordId()]],
+      discordUsername: ['', [Validators.required, this.customValidators.discordUsername()]],
+      discriminator: ['', [Validators.required, this.customValidators.discordDiscriminator()]]
     });
   }
 
@@ -359,17 +369,14 @@ export class MembresComponent implements OnInit {
   }
 
   submitAddMember() {
-    if (!this.addMemberGuild || this.addMemberForm.invalid) return;
+    if (this.addMemberForm.invalid || !this.addMemberGuild) return;
     this.addMemberSubmitting = true;
-    this.http.post('/api/members', {
-      uuidGuild: this.addMemberGuild.uuidGuild || this.addMemberGuild.uuid,
+    const formData = {
       uuidDiscord: this.addDiscordUserForm.value.uuidDiscord,
-      guildUsername: this.addMemberForm.value.guildUsername,
-      xp: "0.00",
-      level: 1,
-      communityRole: "Member",
-      status: "Active"
-    }).subscribe({
+      uuidGuild: this.addMemberGuild.uuidGuild,
+      guildUsername: this.sanitizationService.sanitizeDiscordUsername(this.addMemberForm.value.guildUsername)
+    };
+    this.http.post('/api/members', formData).subscribe({
       next: () => {
         this.addMemberSubmitting = false;
         this.closeAddMemberModal();
