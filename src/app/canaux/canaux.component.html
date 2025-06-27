@@ -26,6 +26,7 @@
             <th>Serveur Discord</th>
             <th>Catégorie</th>
             <th>Date de création</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -44,6 +45,11 @@
             <td>{{ channel.uuidGuild }}</td>
             <td>{{ channel.uuidCategory }}</td>
             <td>{{ channel.createdAt | date:'dd/MM/yyyy HH:mm' }}</td>
+            <td>
+              <button class="btn btn-link text-danger p-0" title="Supprimer le canal">
+                <i class="bi bi-trash"></i>
+              </button>
+            </td>
           </tr>
         </tbody>
       </table>
