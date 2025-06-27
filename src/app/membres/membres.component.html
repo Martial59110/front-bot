@@ -189,18 +189,19 @@
               <label class="form-label">ID Discord</label>
               <input type="text" class="form-control" formControlName="uuidDiscord" [class.is-invalid]="addDiscordUserForm.get('uuidDiscord')?.invalid && addDiscordUserForm.get('uuidDiscord')?.touched">
               <div class="invalid-feedback" *ngIf="addDiscordUserForm.get('uuidDiscord')?.errors?.['required']">ID Discord obligatoire</div>
-              <div class="invalid-feedback" *ngIf="addDiscordUserForm.get('uuidDiscord')?.errors?.['pattern']">Format d'ID Discord invalide</div>
+              <div class="invalid-feedback" *ngIf="addDiscordUserForm.get('uuidDiscord')?.errors?.['invalidDiscordId']">Format d'ID Discord invalide (17-19 chiffres)</div>
             </div>
             <div class="mb-3">
               <label class="form-label">Nom d'utilisateur Discord</label>
               <input type="text" class="form-control" formControlName="discordUsername" [class.is-invalid]="addDiscordUserForm.get('discordUsername')?.invalid && addDiscordUserForm.get('discordUsername')?.touched">
               <div class="invalid-feedback" *ngIf="addDiscordUserForm.get('discordUsername')?.errors?.['required']">Nom d'utilisateur obligatoire</div>
+              <div class="invalid-feedback" *ngIf="addDiscordUserForm.get('discordUsername')?.errors?.['invalidDiscordUsername']">Format de nom d'utilisateur invalide (2-32 caractères, lettres, chiffres, ._-)</div>
             </div>
             <div class="mb-3">
               <label class="form-label">Discriminator (4 chiffres)</label>
               <input type="text" class="form-control" formControlName="discriminator" [class.is-invalid]="addDiscordUserForm.get('discriminator')?.invalid && addDiscordUserForm.get('discriminator')?.touched" placeholder="0000">
               <div class="invalid-feedback" *ngIf="addDiscordUserForm.get('discriminator')?.errors?.['required']">Discriminator obligatoire</div>
-              <div class="invalid-feedback" *ngIf="addDiscordUserForm.get('discriminator')?.errors?.['pattern']">Format invalide (4 chiffres requis)</div>
+              <div class="invalid-feedback" *ngIf="addDiscordUserForm.get('discriminator')?.errors?.['invalidDiscriminator']">Format invalide (4 chiffres requis)</div>
             </div>
           </form>
         </div>
@@ -219,7 +220,8 @@
             <div class="mb-2">
               <label class="form-label">Pseudo dans la guilde</label>
               <input type="text" class="form-control" formControlName="guildUsername" [class.is-invalid]="addMemberForm.get('guildUsername')?.invalid && addMemberForm.get('guildUsername')?.touched">
-              <div class="invalid-feedback" *ngIf="addMemberForm.get('guildUsername')?.invalid && addMemberForm.get('guildUsername')?.touched">Pseudo obligatoire</div>
+              <div class="invalid-feedback" *ngIf="addMemberForm.get('guildUsername')?.errors?.['required']">Pseudo obligatoire</div>
+              <div class="invalid-feedback" *ngIf="addMemberForm.get('guildUsername')?.errors?.['invalidDiscordUsername']">Format de pseudo invalide (2-32 caractères, lettres, chiffres, ._-)</div>
             </div>
           </form>
         </div>
