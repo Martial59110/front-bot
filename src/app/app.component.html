@@ -178,7 +178,7 @@
 </style>
 
 <div class="main-layout">
-  <app-sidebar></app-sidebar>
+  <app-sidebar *ngIf="!isLoginPage"></app-sidebar>
   <div class="main-content">
     <router-outlet></router-outlet>
   </div>
