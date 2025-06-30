@@ -1,22 +1,11 @@
 import { HttpInterceptorFn, HttpRequest, HttpHandlerFn } from '@angular/common/http';
-import { inject } from '@angular/core';
-import { AuthService } from '../../shared/services/auth.service';
 
 export const jwtInterceptor: HttpInterceptorFn = (
   request: HttpRequest<unknown>,
   next: HttpHandlerFn
 ) => {
-  const authService = inject(AuthService);
-  const token = authService.getToken();
-
-  // Si on a un token et que la requête va vers notre API, ajouter le header Authorization
-  if (token && request.url.includes('/api/')) {
-    request = request.clone({
-      setHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-  }
-
+  // Le token est maintenant géré par le backend via les cookies httpOnly
+  // Pas besoin d'ajouter de header Authorization, le backend lira automatiquement le cookie
+  
   return next(request);
 }; 
