@@ -52,9 +52,9 @@ export class CallbackComponent implements OnInit {
   }
 
   private handleCallback(): void {
-    // Récupérer le token JWT depuis l'URL
+    // Récupérer les paramètres depuis l'URL
     this.route.queryParams.subscribe(params => {
-      const token = params['token'];
+      const success = params['success'];
       const error = params['error'];
       const message = params['message'];
 
@@ -64,16 +64,13 @@ export class CallbackComponent implements OnInit {
         return;
       }
 
-      if (!token) {
+      if (!success) {
         this.isLoading = false;
-        this.error = 'Token d\'authentification manquant.';
+        this.error = 'Paramètre de succès manquant.';
         return;
       }
 
-      // Stocker le token et récupérer les informations utilisateur
-      this.authService.setToken(token);
-      
-      // Récupérer les informations utilisateur depuis l'API
+      // Le token est maintenant dans un cookie httpOnly, on peut directement récupérer les informations utilisateur
       this.authService.getUserInfo().subscribe({
         next: (userInfo) => {
           this.isLoading = false;
