@@ -35,19 +35,17 @@ export interface JwtPayload {
 })
 export class AuthService {
   private currentUserSubject = new BehaviorSubject<DiscordUser | null>(null);
-  private tokenSubject = new BehaviorSubject<string | null>(null);
   private rolesSubject = new BehaviorSubject<string[]>([]);
 
   public currentUser$ = this.currentUserSubject.asObservable();
-  public token$ = this.tokenSubject.asObservable();
   public roles$ = this.rolesSubject.asObservable();
 
   constructor(
     private http: HttpClient,
     private router: Router
   ) {
-    // Vérifier si un token existe au démarrage
-    this.loadStoredAuth();
+    // Vérifier si un utilisateur est connecté au démarrage
+    this.checkAuthStatus();
   }
 
   /**
@@ -60,11 +58,11 @@ export class AuthService {
   /**
    * Traite le callback Discord et récupère les informations utilisateur
    */
-  handleCallback(code: string): Observable<AuthResponse> {
-    return this.http.get<AuthResponse>(`/api/auth/user-info?code=${code}`).pipe(
+  handleCallback(): Observable<AuthResponse> {
+    return this.http.get<AuthResponse>(`/api/auth/user-info`).pipe(
       tap(response => {
-        if (response.token && response.allowedGuild.isMember) {
-          this.setAuth(response.token, response.user, response.allowedGuild.roles);
+        if (response.user && response.allowedGuild.isMember) {
+          this.setAuth(response.user, response.allowedGuild.roles);
         }
       })
     );
@@ -74,22 +72,15 @@ export class AuthService {
    * Déconnecte l'utilisateur
    */
   logout(): void {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('current_user');
-    localStorage.removeItem('user_roles');
-    
-    this.currentUserSubject.next(null);
-    this.tokenSubject.next(null);
-    this.rolesSubject.next([]);
-    
-    this.router.navigate(['/login']);
+    // Appeler la route de déconnexion du backend qui supprime le cookie
+    window.location.href = '/api/auth/logout';
   }
 
   /**
    * Vérifie si l'utilisateur est connecté
    */
   isAuthenticated(): boolean {
-    return !!this.tokenSubject.value;
+    return !!this.currentUserSubject.value;
   }
 
   /**
@@ -107,13 +98,6 @@ export class AuthService {
   }
 
   /**
-   * Récupère le token JWT actuel
-   */
-  getToken(): string | null {
-    return this.tokenSubject.value;
-  }
-
-  /**
    * Récupère l'utilisateur actuel
    */
   getCurrentUser(): DiscordUser | null {
@@ -128,21 +112,13 @@ export class AuthService {
   }
 
   /**
-   * Définit le token JWT (utilisé après le callback)
-   */
-  setToken(token: string): void {
-    localStorage.setItem('auth_token', token);
-    this.tokenSubject.next(token);
-  }
-
-  /**
-   * Récupère les informations utilisateur depuis l'API avec le token JWT
+   * Récupère les informations utilisateur depuis l'API
    */
   getUserInfo(): Observable<AuthResponse> {
     return this.http.get<AuthResponse>('/api/auth/user-info').pipe(
       tap(response => {
         if (response.user && response.allowedGuild.isMember) {
-          this.setAuth(this.getToken()!, response.user, response.allowedGuild.roles);
+          this.setAuth(response.user, response.allowedGuild.roles);
         }
       })
     );
@@ -151,36 +127,25 @@ export class AuthService {
   /**
    * Stocke les informations d'authentification
    */
-  private setAuth(token: string, user: DiscordUser, roles: string[]): void {
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('current_user', JSON.stringify(user));
-    localStorage.setItem('user_roles', JSON.stringify(roles));
-    
-    this.tokenSubject.next(token);
+  private setAuth(user: DiscordUser, roles: string[]): void {
     this.currentUserSubject.next(user);
     this.rolesSubject.next(roles);
   }
 
   /**
-   * Charge les informations d'authentification stockées
+   * Vérifie le statut d'authentification au démarrage
    */
-  private loadStoredAuth(): void {
-    const token = localStorage.getItem('auth_token');
-    const userStr = localStorage.getItem('current_user');
-    const rolesStr = localStorage.getItem('user_roles');
-
-    if (token && userStr && rolesStr) {
-      try {
-        const user = JSON.parse(userStr);
-        const roles = JSON.parse(rolesStr);
-        
-        this.tokenSubject.next(token);
-        this.currentUserSubject.next(user);
-        this.rolesSubject.next(roles);
-      } catch (error) {
-        console.error('Erreur lors du chargement des données d\'authentification:', error);
-        this.logout();
+  private checkAuthStatus(): void {
+    this.getUserInfo().subscribe({
+      next: (response) => {
+        if (response.user && response.allowedGuild.isMember) {
+          this.setAuth(response.user, response.allowedGuild.roles);
+        }
+      },
+      error: (error) => {
+        console.log('Aucun utilisateur connecté ou erreur d\'authentification:', error);
+        // Pas besoin de rediriger, l'utilisateur sera redirigé par le guard si nécessaire
       }
-    }
+    });
   }
 } 
